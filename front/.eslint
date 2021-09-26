@@ -1,0 +1,14 @@
+{
+  "rules": {
+    "react/jsx-indent-props": [
+      "enabled",
+      2
+    ],
+    "brace-style": [
+      "error",
+      "1tbs"
+    ],
+    "no-useless-concat": "error",
+    "prefer-template": "error"
+  }
+}
