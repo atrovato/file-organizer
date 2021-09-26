@@ -4,11 +4,12 @@ import cx from 'classnames';
 import List from '../../components/list';
 import ActionButton from '../../components/form/button/action';
 import style from './style.css';
+import Type from '../../components/form/type';
 
 class Home extends Component {
 
 	selectAction = (action) => {
-		this.setState({ action });
+		this.setState({ action, collapsed: true });
 	}
 
 	cancel = () => {
@@ -16,7 +17,14 @@ class Home extends Component {
 			return { ...item, selected: false };
 		});
 
-		this.setState({ availableFiles, selectedFiles: [], action: undefined })
+		this.setState({ availableFiles, selectedFiles: [], action: undefined, collapsed: false })
+	}
+
+	toggleCollapse = () => {
+		const { action, collapsed } = this.state;
+		if (action) {
+			this.setState({ collapsed: !collapsed });
+		}
 	}
 
 	toggleSelection = (index) => {
@@ -49,7 +57,8 @@ class Home extends Component {
 		this.state = {
 			availableFiles: [],
 			selectedFiles: [],
-			loading: true
+			loading: true,
+			collapsed: false
 		}
 	}
 
@@ -57,15 +66,15 @@ class Home extends Component {
 		this.loadFiles();
 	}
 
-	render(props, { availableFiles, selectedFiles, loading, action }) {
+	render(props, { availableFiles, selectedFiles, loading, action, collapsed }) {
 		const nbSelected = selectedFiles.length;
 
 		return (
-			<div class="container">
+			<div class="container mt-3">
 				{loading && (
-					<div class="text-center">
+					<div class="text-center mt-5">
 						<div class="spinner-border text-info" role="status">
-							<span class="visually-hidden">Loading...</span>
+							<span class="visually-hidden">Chargement...</span>
 						</div>
 					</div>
 				)}
@@ -73,26 +82,35 @@ class Home extends Component {
 					<Fragment>
 						<div class="row">
 							<div class="col-12">
-								<div class={cx('card', 'overflow-hidden', style.animate)} style={{ height: action ? 82 : 500 }}>
+								<div class={cx('card', 'overflow-hidden', style.animate)} style={{ height: collapsed ? 82 : 500 }}>
 									<div class="card-header">
 										Liste des fichiers disponibles
 									</div>
 									<div class="overflow-auto">
-										<List elements={availableFiles} onSelect={this.toggleSelection} />
+										<List elements={availableFiles} onSelect={this.toggleSelection} disabled={action} />
 									</div>
-									<div class="card-footer text-end fw-lighter">
+									<div class="card-footer text-end fw-lighter" onClick={this.toggleCollapse}>
+										{action && (
+											<i role="button" class={cx('bi', 'me-2', {
+												'bi-chevron-up': !collapsed,
+												'bi-chevron-down': collapsed
+											})}></i>
+										)}
 										{nbSelected} sélectionné{nbSelected > 1 ? 's' : ''}
 									</div>
 								</div>
 							</div>
 						</div>
-						<div class="row mt-5">
+						<div class="row mt-3">
 							<div class="text-center mx-auto">
 								<ActionButton label="Film" type="movie" selectAction={this.selectAction} disabled={nbSelected !== 1} action={action} />
 								<ActionButton label="Série" type="show" selectAction={this.selectAction} disabled={nbSelected === 0} action={action} />
 							</div>
 						</div>
-						<div class="row position-sticky">
+						<div class="row mt-3">
+							<Type type={action} />
+						</div>
+						<div class="row mt-3">
 							<div class="text-end">
 								<button type="button" class="btn btn-danger" disabled={nbSelected === 0} onClick={this.cancel}>Annuler</button>
 							</div>

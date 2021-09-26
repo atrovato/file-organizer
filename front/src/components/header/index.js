@@ -1,5 +1,5 @@
 const Header = () => (
-  <nav class="navbar navbar-dark bg-dark mb-5">
+  <nav class="navbar navbar-dark bg-dark">
     <div class="container-fluid">
       <span class="navbar-brand">
         File Organizer

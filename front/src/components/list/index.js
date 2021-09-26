@@ -1,6 +1,6 @@
 import cx from 'classnames';
 
-const List = ({ elements = [], onSelect }) => (
+const List = ({ elements = [], onSelect, disabled }) => (
   <div class="list-group">
     {elements.length === 0 && (
       <div class="text-center mt-5">Aucun fichier</div>
@@ -13,6 +13,7 @@ const List = ({ elements = [], onSelect }) => (
         type="button"
         key={`file-${key}`}
         onClick={() => onSelect(id)}
+        disabled={disabled}
       >
         {name}
         <br />
