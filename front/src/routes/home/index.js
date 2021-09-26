@@ -1,7 +1,23 @@
 import { Component, Fragment } from 'preact';
+import cx from 'classnames';
+
 import List from '../../components/list';
+import ActionButton from '../../components/form/button/action';
+import style from './style.css';
 
 class Home extends Component {
+
+	selectAction = (action) => {
+		this.setState({ action });
+	}
+
+	cancel = () => {
+		const availableFiles = this.state.availableFiles.map(item => {
+			return { ...item, selected: false };
+		});
+
+		this.setState({ availableFiles, selectedFiles: [], action: undefined })
+	}
 
 	toggleSelection = (index) => {
 		const availableFiles = this.state.availableFiles.map(item => {
@@ -41,7 +57,7 @@ class Home extends Component {
 		this.loadFiles();
 	}
 
-	render(props, { availableFiles, selectedFiles, loading }) {
+	render(props, { availableFiles, selectedFiles, loading, action }) {
 		const nbSelected = selectedFiles.length;
 
 		return (
@@ -57,7 +73,7 @@ class Home extends Component {
 					<Fragment>
 						<div class="row">
 							<div class="col-12">
-								<div class="card overflow-hidden" style={{ height: 500 }}>
+								<div class={cx('card', 'overflow-hidden', style.animate)} style={{ height: action ? 82 : 500 }}>
 									<div class="card-header">
 										Liste des fichiers disponibles
 									</div>
@@ -72,8 +88,13 @@ class Home extends Component {
 						</div>
 						<div class="row mt-5">
 							<div class="text-center mx-auto">
-								<button type="button" class="btn btn-primary me-2" disabled={nbSelected !== 1}>Film</button>
-								<button type="button" class="btn btn-primary" disabled={nbSelected === 0}>Série</button>
+								<ActionButton label="Film" type="movie" selectAction={this.selectAction} disabled={nbSelected !== 1} action={action} />
+								<ActionButton label="Série" type="show" selectAction={this.selectAction} disabled={nbSelected === 0} action={action} />
+							</div>
+						</div>
+						<div class="row position-sticky">
+							<div class="text-end">
+								<button type="button" class="btn btn-danger" disabled={nbSelected === 0} onClick={this.cancel}>Annuler</button>
 							</div>
 						</div>
 					</Fragment>
