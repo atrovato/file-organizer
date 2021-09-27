@@ -4,9 +4,39 @@ import cx from 'classnames';
 import List from '../../components/list';
 import ActionButton from '../../components/form/button/action';
 import style from './style.css';
-import Type from '../../components/form/type';
+import normalize from '../../utils/normalize';
+import Diff from '../../components/diff';
 
 class Home extends Component {
+
+	normalizeName = (e) => {
+		const { value } = e.target;
+		const normalizedName = normalize(value);
+		const targetFiles = this.state.selectedFiles.map(file => {
+			return {
+				source: file,
+				target: this.normalizeFile(normalizedName, file)
+			}
+		});
+		this.setState({ normalizedName, targetFiles });
+	}
+
+	normalizeFile = (normalizedName, file) => {
+		const { extension, name: originalName } = file;
+		let name;
+		let path;
+
+		if (this.state.action === 'movie') {
+			path = '/Films';
+			name = normalizedName;
+		} else {
+			const [, season, episode] = originalName.match(/S(\d+)E(\d+)/i);
+			path = `/Series/${normalizedName}/${normalizedName} - S${season}`;
+			name = `${normalizedName} - S${season}E${episode}`;
+		}
+
+		return { name, path, extension };
+	}
 
 	selectAction = (action) => {
 		this.setState({ action, collapsed: true });
@@ -40,7 +70,7 @@ class Home extends Component {
 		for (let i = 0; i < 20; i++) {
 			availableFiles.push({
 				id: i,
-				name: `File ${i + 1}`,
+				name: `File ${i + 1} S0${i % 2 + 1}E0${i + 1}`,
 				path: '/path/to/file',
 				extension: 'avi'
 			});
@@ -55,6 +85,7 @@ class Home extends Component {
 		this.state = {
 			availableFiles: [],
 			selectedFiles: [],
+			targetFiles: [],
 			loading: true,
 			collapsed: false
 		}
@@ -64,8 +95,9 @@ class Home extends Component {
 		this.loadFiles();
 	}
 
-	render(props, { availableFiles, selectedFiles, loading, action, collapsed }) {
+	render(props, { availableFiles, selectedFiles, targetFiles, loading, action, collapsed, normalizedName = '' }) {
 		const nbSelected = selectedFiles.length;
+		const nameValid = normalizedName.length > 0;
 
 		return (
 			<div class="container mt-3">
@@ -99,17 +131,35 @@ class Home extends Component {
 								</div>
 							</div>
 						</div>
-						<div class="row mt-3">
-							<div class="text-center mx-auto">
-								<ActionButton label="Film" type="movie" selectAction={this.selectAction} disabled={nbSelected !== 1} action={action} />
-								<ActionButton label="Série" type="show" selectAction={this.selectAction} disabled={nbSelected === 0} action={action} />
+						{nbSelected > 0 && (
+							<div class="row mt-3">
+								<div class="text-center mx-auto">
+									<ActionButton label="Film" type="movie" selectAction={this.selectAction} disabled={nbSelected !== 1} action={action} />
+									<ActionButton label="Série" type="show" selectAction={this.selectAction} disabled={nbSelected === 0} action={action} />
+								</div>
 							</div>
-						</div>
-						<div class="row mt-3">
-							<Type type={action} files={selectedFiles} />
-						</div>
+						)}
+						{action && (
+							<div class="row mt-3">
+								<div class="input-group input-group">
+									<span class="input-group-text">Titre de la vidéo</span>
+									<input type="text" class="form-control" placeholder="Entrer le titre..." onInput={this.normalizeName} />
+								</div>
+
+								{nameValid > 0 && (
+									<div class="valid-feedback d-block">
+										Titre normalisé : {normalizedName}
+									</div>
+								)}
+
+								{targetFiles.length > 0 && (
+									<Diff elements={targetFiles} />
+								)}
+							</div>
+						)}
 						<div class="row mt-3">
 							<div class="text-end">
+								<button type="button" class="btn btn-success me-3" disabled={targetFiles.length === 0}>Appliquer</button>
 								<button type="button" class="btn btn-danger" disabled={nbSelected === 0} onClick={this.cancel}>Annuler</button>
 							</div>
 						</div>
