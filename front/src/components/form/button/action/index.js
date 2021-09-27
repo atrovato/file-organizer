@@ -11,7 +11,7 @@ const ActionButton = ({ label, type, disabled, action, selectAction }) => (
     <label for={type}
       class={cx("btn", "me-2", {
         "btn-primary": !action || action === type,
-        "btn-outline-primary": action && action !== type,
+        "btn-outline-secondary": action && action !== type,
       })}
     >
       {label}
