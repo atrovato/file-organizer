@@ -13,11 +13,8 @@ class Home extends Component {
 	}
 
 	cancel = () => {
-		const availableFiles = this.state.availableFiles.map(item => {
-			return { ...item, selected: false };
-		});
-
-		this.setState({ availableFiles, selectedFiles: [], action: undefined, collapsed: false })
+		this.setState({ availableFiles: [], selectedFiles: [], action: undefined, collapsed: false, loading: true });
+		this.loadFiles();
 	}
 
 	toggleCollapse = () => {
@@ -94,7 +91,7 @@ class Home extends Component {
 											<i role="button" class={cx('bi', 'me-2', {
 												'bi-chevron-up': !collapsed,
 												'bi-chevron-down': collapsed
-											})}></i>
+											})} />
 										)}
 										{nbSelected} sélectionné{nbSelected > 1 ? 's' : ''}
 									</div>
