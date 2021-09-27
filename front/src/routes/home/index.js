@@ -41,7 +41,8 @@ class Home extends Component {
 			availableFiles.push({
 				id: i,
 				name: `File ${i + 1}`,
-				path: '/path/to/file'
+				path: '/path/to/file',
+				extension: 'avi'
 			});
 		}
 
@@ -105,7 +106,7 @@ class Home extends Component {
 							</div>
 						</div>
 						<div class="row mt-3">
-							<Type type={action} />
+							<Type type={action} files={selectedFiles} />
 						</div>
 						<div class="row mt-3">
 							<div class="text-end">
