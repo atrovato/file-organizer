@@ -1,41 +1,89 @@
 import { Component, Fragment } from 'preact';
 import cx from 'classnames';
+import axios from 'axios';
 
+import config from '../../config';
 import List from '../../components/list';
 import ActionButton from '../../components/form/button/action';
 import style from './style.css';
 import normalize from '../../utils/normalize';
 import Diff from '../../components/diff';
 
+const TEMPLATES = {
+	season: {
+		pattern: /S(\d+)EP?(\d+)/i,
+		formatDir: (normalizedName, matchResult) => `/Series/${normalizedName}/${normalizedName} - S${matchResult[1]}`,
+		formatName: (normalizedName, matchResult) => `${normalizedName} - S${matchResult[1]}E${matchResult[2]}`
+	},
+	episode: {
+		pattern: /(\d+)/i,
+		formatDir: (normalizedName) => `/Series/${normalizedName}`,
+		formatName: (normalizedName, matchResult) => `${normalizedName} - E${matchResult[1]}`,
+	}
+};
+
 class Home extends Component {
 
-	normalizeName = (e) => {
-		const { value } = e.target;
-		const normalizedName = normalize(value);
-		const targetFiles = this.state.selectedFiles.map(file => {
-			return {
-				source: file,
-				target: this.normalizeFile(normalizedName, file)
+	changeShowMode = () => {
+		let { showMode, normalizedName = '' } = this.state;
+
+		if (showMode == 'season') {
+			showMode = 'episode';
+		} else {
+			showMode = 'season';
+		}
+
+		this.setState({ showMode }, () => {
+			if (normalizedName.length > 0) {
+				this.normalizeElements(normalizedName);
 			}
 		});
-		this.setState({ normalizedName, targetFiles });
+	}
+
+	normalizeName = (e) => {
+		this.normalizeElements(e.target.value);
+	}
+
+	normalizeElements = (value) => {
+		const normalizedName = normalize(value);
+		let error;
+		const targetFiles = this.state.selectedFiles.map(file => {
+			const target = this.normalizeFile(normalizedName, file);
+			error = error || target.error;
+			return {
+				source: file,
+				target,
+				error: target.error,
+			}
+		});
+		this.setState({ normalizedName, targetFiles, error });
 	}
 
 	normalizeFile = (normalizedName, file) => {
-		const { extension, name: originalName } = file;
+		const { ext, name: originalName } = file;
 		let name;
-		let path;
+		let dir;
+		let error;
 
 		if (this.state.action === 'movie') {
-			path = '/Films';
+			dir = '/Films';
 			name = normalizedName;
+		} else if (this.state.action === 'show') {
+			const { showMode = 'season' } = this.state;
+			const { pattern, formatDir, formatName } = TEMPLATES[showMode]
+
+			if (pattern.test(originalName)) {
+				const matchResult = originalName.match(pattern);
+				dir = formatDir(normalizedName, matchResult);
+				name = formatName(normalizedName, matchResult);
+			} else {
+				error = 'Not managed file pattern';
+			}
 		} else {
-			const [, season, episode] = originalName.match(/S(\d+)E(\d+)/i);
-			path = `/Series/${normalizedName}/${normalizedName} - S${season}`;
-			name = `${normalizedName} - S${season}E${episode}`;
+			error = 'Not managed video type';
 		}
 
-		return { name, path, extension };
+		return { name, dir, ext, base: `${name}${ext}`, error };
 	}
 
 	selectAction = (action) => {
@@ -43,7 +91,17 @@ class Home extends Component {
 	}
 
 	cancel = () => {
-		this.setState({ availableFiles: [], selectedFiles: [], action: undefined, collapsed: false, loading: true });
+		this.setState({
+			availableFiles: [],
+			selectedFiles: [],
+			action: undefined,
+			collapsed: false,
+			loading: true,
+			normalizedName: undefined,
+			targetFiles: [],
+			error: undefined,
+			showMode: 'season',
+		});
 		this.loadFiles();
 	}
 
@@ -54,10 +112,14 @@ class Home extends Component {
 		}
 	}
 
-	toggleSelection = (index) => {
+	toggleSelection = (selected) => {
+		const { dir: selectedDir, base: selectedBase } = selected;
+		const selectedPath = `${selectedDir}-${selectedBase}`;
+
 		const availableFiles = this.state.availableFiles.map(item => {
-			const { id, selected = false } = item;
-			const newSelection = index === id ? !selected : selected;
+			const { selected = false, dir, base } = item;
+			const curFilePath = `${dir}-${base}`;
+			const newSelection = selectedPath === curFilePath ? !selected : selected;
 			return { ...item, selected: newSelection };
 		});
 
@@ -65,18 +127,30 @@ class Home extends Component {
 		this.setState({ availableFiles, selectedFiles });
 	}
 
-	loadFiles = () => {
-		const availableFiles = [];
-		for (let i = 0; i < 20; i++) {
-			availableFiles.push({
-				id: i,
-				name: `File ${i + 1} S0${i % 2 + 1}E0${i + 1}`,
-				path: '/path/to/file',
-				extension: 'avi'
-			});
-		}
+	selectAll = () => {
+		const availableFiles = this.state.availableFiles.map(item => {
+			return { ...item, selected: true };
+		});
 
-		setTimeout(() => this.setState({ availableFiles, loading: false }), 2000);
+		this.setState({ availableFiles, selectedFiles: availableFiles });
+	}
+
+	unselectAll = () => {
+		const availableFiles = this.state.availableFiles.map(item => {
+			return { ...item, selected: false };
+		});
+
+		this.setState({ availableFiles, selectedFiles: [] });
+	}
+
+	loadFiles = async () => {
+		try {
+			const { data = {} } = await axios.get(`${config.API_URL}/api/files`);
+			const { files: availableFiles } = data;
+			this.setState({ availableFiles, loading: false });
+		} catch (e) {
+			console.log(e);
+		}
 	}
 
 	constructor(props) {
@@ -87,7 +161,8 @@ class Home extends Component {
 			selectedFiles: [],
 			targetFiles: [],
 			loading: true,
-			collapsed: false
+			collapsed: false,
+			showMode: 'season',
 		}
 	}
 
@@ -95,7 +170,7 @@ class Home extends Component {
 		this.loadFiles();
 	}
 
-	render(props, { availableFiles, selectedFiles, targetFiles, loading, action, collapsed, normalizedName = '' }) {
+	render(props, { availableFiles, selectedFiles, targetFiles, loading, action, collapsed, normalizedName = '', error, showMode = 'season' }) {
 		const nbSelected = selectedFiles.length;
 		const nameValid = normalizedName.length > 0;
 
@@ -119,14 +194,28 @@ class Home extends Component {
 									<div class="overflow-auto">
 										<List elements={availableFiles} onSelect={this.toggleSelection} disabled={action} />
 									</div>
-									<div class="card-footer text-end fw-lighter" onClick={this.toggleCollapse}>
-										{action && (
-											<i role="button" class={cx('bi', 'me-2', {
-												'bi-chevron-up': !collapsed,
-												'bi-chevron-down': collapsed
-											})} />
+									<div class="card-footer fw-lighter justify-content-end row">
+										{!action && (
+											<div class="col-8">
+												<div role="button" class="d-inline me-3" onClick={this.selectAll}>
+													Select all
+												</div>
+												<div role="button" class="d-inline" onClick={this.unselectAll}>
+													Deselect all
+												</div>
+											</div>
 										)}
-										{nbSelected} sélectionné{nbSelected > 1 ? 's' : ''}
+										<div class="col-4 text-end">
+											<div role="button" class="d-inline" onClick={this.toggleCollapse}>
+												{action && (
+													<i class={cx('bi', 'me-2', {
+														'bi-chevron-up': !collapsed,
+														'bi-chevron-down': collapsed
+													})} />
+												)}
+												{nbSelected} sélectionné{nbSelected > 1 ? 's' : ''}
+											</div>
+										</div>
 									</div>
 								</div>
 							</div>
@@ -144,6 +233,12 @@ class Home extends Component {
 								<div class="input-group input-group">
 									<span class="input-group-text">Titre de la vidéo</span>
 									<input type="text" class="form-control" placeholder="Entrer le titre..." onInput={this.normalizeName} />
+									{action === 'show' && (
+										<span class="input-group-text">
+											<label for="showMode" class="me-2">Par saison</label>
+											<input type="checkbox" id="showMode" checked={showMode === 'season'} onClick={this.changeShowMode}></input>
+										</span>
+									)}
 								</div>
 
 								{nameValid > 0 && (
@@ -159,7 +254,7 @@ class Home extends Component {
 						)}
 						<div class="row mt-3">
 							<div class="text-end">
-								<button type="button" class="btn btn-success me-3" disabled={targetFiles.length === 0}>Appliquer</button>
+								<button type="button" class="btn btn-success me-3" disabled={targetFiles.length === 0 || error}>Appliquer</button>
 								<button type="button" class="btn btn-danger" disabled={nbSelected === 0} onClick={this.cancel}>Annuler</button>
 							</div>
 						</div>

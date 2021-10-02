@@ -5,19 +5,19 @@ const List = ({ elements = [], onSelect, disabled }) => (
     {elements.length === 0 && (
       <div class="text-center mt-5">Aucun fichier</div>
     )}
-    {elements.length !== 0 && elements.map(({ name, path, selected = false, id }, key) => (
+    {elements.length !== 0 && elements.map((item, key) => (
       <button class={cx('list-group-item list-group-item-action', {
-        'list-group-item-light': !selected,
-        'list-group-item-info': selected
+        'list-group-item-light': !item.selected,
+        'list-group-item-info': item.selected
       })}
         type="button"
         key={`file-${key}`}
-        onClick={() => onSelect(id)}
+        onClick={() => onSelect(item)}
         disabled={disabled}
       >
-        {name}
+        {item.base}
         <br />
-        <small class="text-muted fw-light">{path}</small>
+        <small class="text-muted fw-light">{item.dir}</small>
       </button>
     ))}
   </div>
