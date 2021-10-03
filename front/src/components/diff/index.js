@@ -1,6 +1,6 @@
 import cx from 'classnames';
 
-const Line = ({ dir, base, size, error }) => (
+const Line = ({ dir, base, size }) => (
   <div class={`col-${size}`}>
     {base}
     <br />

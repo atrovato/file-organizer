@@ -14,13 +14,26 @@ const webSocketManager = new WebSocketManager(wss, fileManager);
 // enable cross origin requests
 app.use(cors());
 
+// JSON body
+app.use(express.json())
+
 app.get('/api/files', async (req, res) => {
   try {
     const files = await fileManager.list();
     res.json(files);
   } catch (e) {
     console.error(e);
-    res.status(404).json(e);
+    res.status(500).json(e);
+  }
+});
+
+app.post('/api/files/compute', (req, res) => {
+  try {
+    const result = fileManager.compute(req.body);
+    res.json(result);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json(e);
   }
 });
 

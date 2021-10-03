@@ -6,37 +6,14 @@ import config from '../../config';
 import List from '../../components/list';
 import ActionButton from '../../components/form/button/action';
 import style from './style.css';
-import normalize from '../../utils/normalize';
 import Diff from '../../components/diff';
-
-const TEMPLATES = {
-	season: {
-		pattern: /S(\d+)EP?(\d+)/i,
-		formatDir: (normalizedName, matchResult) => `/Series/${normalizedName}/${normalizedName} - S${matchResult[1]}`,
-		formatName: (normalizedName, matchResult) => `${normalizedName} - S${matchResult[1]}E${matchResult[2]}`
-	},
-	episode: {
-		pattern: /(\d+)/i,
-		formatDir: (normalizedName) => `/Series/${normalizedName}`,
-		formatName: (normalizedName, matchResult) => `${normalizedName} - E${matchResult[1]}`,
-	}
-};
 
 class Home extends Component {
 
-	changeShowMode = () => {
-		let { showMode, normalizedName = '' } = this.state;
-
-		if (showMode == 'season') {
-			showMode = 'episode';
-		} else {
-			showMode = 'season';
-		}
-
-		this.setState({ showMode }, () => {
-			if (normalizedName.length > 0) {
-				this.normalizeElements(normalizedName);
-			}
+	changeOption = (e) => {
+		const { name: option } = e.target;
+		this.setState({ option }, () => {
+			this.normalizeElements(this.state.normalizedName);
 		});
 	}
 
@@ -44,46 +21,17 @@ class Home extends Component {
 		this.normalizeElements(e.target.value);
 	}
 
-	normalizeElements = (value) => {
-		const normalizedName = normalize(value);
-		let error;
-		const targetFiles = this.state.selectedFiles.map(file => {
-			const target = this.normalizeFile(normalizedName, file);
-			error = error || target.error;
-			return {
-				source: file,
-				target,
-				error: target.error,
-			}
-		});
-		this.setState({ normalizedName, targetFiles, error });
-	}
-
-	normalizeFile = (normalizedName, file) => {
-		const { ext, name: originalName } = file;
-		let name;
-		let dir;
-		let error;
-
-		if (this.state.action === 'movie') {
-			dir = '/Films';
-			name = normalizedName;
-		} else if (this.state.action === 'show') {
-			const { showMode = 'season' } = this.state;
-			const { pattern, formatDir, formatName } = TEMPLATES[showMode]
-
-			if (pattern.test(originalName)) {
-				const matchResult = originalName.match(pattern);
-				dir = formatDir(normalizedName, matchResult);
-				name = formatName(normalizedName, matchResult);
-			} else {
-				error = 'Not managed file pattern';
-			}
-		} else {
-			error = 'Not managed video type';
+	normalizeElements = async (name) => {
+		const { action: type, selectedFiles: sources, option } = this.state;
+		const body = { type, name, sources, option };
+		try {
+			// this.setState({ loading: true });
+			const { data = {} } = await axios.post(`${config.API_URL}/api/files/compute`, body);
+			const { files: targetFiles, error, normalizedName } = data;
+			this.setState({ normalizedName, targetFiles, error });
+		} catch (e) {
+			console.log(e);
 		}
-
-		return { name, dir, ext, base: `${name}${ext}`, error };
 	}
 
 	selectAction = (action) => {
@@ -100,7 +48,7 @@ class Home extends Component {
 			normalizedName: undefined,
 			targetFiles: [],
 			error: undefined,
-			showMode: 'season',
+			option: undefined,
 		});
 		this.loadFiles();
 	}
@@ -162,7 +110,7 @@ class Home extends Component {
 			targetFiles: [],
 			loading: true,
 			collapsed: false,
-			showMode: 'season',
+			option: undefined,
 		}
 	}
 
@@ -180,10 +128,11 @@ class Home extends Component {
 		collapsed,
 		normalizedName = '',
 		error,
-		showMode = 'season'
+		option,
 	}) {
 		const nbSelected = selectedFiles.length;
 		const nameValid = normalizedName.length > 0;
+		const selectedType = availableTypes.find(type => type.key === action);
 
 		return (
 			<div class="container mt-3">
@@ -239,17 +188,26 @@ class Home extends Component {
 							</div>
 						</div>
 						{action && (
-							<div class="row mt-3">
-								<div class="input-group input-group">
-									<span class="input-group-text">Titre de la vidéo</span>
-									<input type="text" class="form-control" placeholder="Entrer le titre..." onInput={this.normalizeName} />
-									{action === 'show' && (
-										<span class="input-group-text">
-											<label for="showMode" class="me-2">Par saison</label>
-											<input type="checkbox" id="showMode" checked={showMode === 'season'} onClick={this.changeShowMode}></input>
-										</span>
-									)}
+							<div>
+								<div class="row mt-3">
+									<div class="input-group input-group">
+										<span class="input-group-text">Titre de la vidéo</span>
+										<input type="text" class="form-control" placeholder="Entrer le titre..." onInput={this.normalizeName} />
+									</div>
 								</div>
+
+								{selectedType && selectedType.options && (
+									<div class="mx-auto text-center">
+										<div class="btn-group mt-3" role="group">
+											{selectedType.options.map((opt, idx) => (
+												<Fragment key={`options-${idx}`}>
+													<input type="radio" class="btn-check" name={opt.key} id={opt.key} checked={(!option && idx === 0) || opt.key === option} onClick={this.changeOption} />
+													<label class="btn btn-outline-primary" for={opt.key}>{opt.label}</label>
+												</Fragment>
+											))}
+										</div>
+									</div>
+								)}
 
 								{nameValid > 0 && (
 									<div class="valid-feedback d-block">
