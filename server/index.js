@@ -1,15 +1,22 @@
 const express = require('express');
 const cors = require('cors');
-const { WebSocketServer } = require('ws');
+const WebSocket = require('ws');
+const http = require("http");
 
-const { SOCKET_PORT, WEBSOCKET_PORT, DOWNLOAD_DIR, MOVIE_DIR, SHOW_DIR } = require('./config');
+const { SOCKET_PORT, DOWNLOAD_DIR, MOVIE_DIR, SHOW_DIR } = require('./config');
 const WebSocketManager = require('./lib/websocket');
 const FileManager = require('./lib/files');
 
 const app = express();
-const wss = new WebSocketServer({ port: WEBSOCKET_PORT });
-const fileManager = new FileManager(DOWNLOAD_DIR, MOVIE_DIR, SHOW_DIR);
-const webSocketManager = new WebSocketManager(wss, fileManager);
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server, path: '/ws' });
+
+const webSocketManager = new WebSocketManager(wss);
+const fileManager = new FileManager(webSocketManager, DOWNLOAD_DIR, MOVIE_DIR, SHOW_DIR);
+
+wss.on('connection', (ws) => {
+  console.log('WSS connected!');
+});
 
 // enable cross origin requests
 app.use(cors());
@@ -39,9 +46,8 @@ app.post('/api/files/compute', (req, res) => {
 
 app.post('/api/files', (req, res) => {
   try {
-    //const result = fileManager.compute(req.body);
-    const progress = { done: 1, total: req.body.files.length };
-    res.json(progress);
+    const result = fileManager.move(req.body);
+    res.json(result);
   } catch (e) {
     console.error(e);
     res.status(500).json(e);

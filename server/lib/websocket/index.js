@@ -4,10 +4,10 @@ class WebSocketManager {
     this.wss = wss;
   }
 
-  send(key, message) {
-    this.wss.send({ key, message });
-  }
+}
 
+WebSocketManager.prototype.send = function (key, message) {
+  this.wss.send({ key, message });
 }
 
 module.exports = WebSocketManager;

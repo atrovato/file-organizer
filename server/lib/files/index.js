@@ -11,7 +11,8 @@ const SHOW_KEY = 'show';
 
 class FileManager {
 
-  constructor(sourceDir, movieTargetDir, showTargetDir) {
+  constructor(wss, sourceDir, movieTargetDir, showTargetDir) {
+    this.wss = wss;
     this.sourceDir = sourceDir;
 
     this.types = {
@@ -55,6 +56,17 @@ FileManager.prototype.compute = function ({ type: typeName, name, sources = [], 
   });
 
   return { normalizedName, files, error };
+};
+
+
+FileManager.prototype.move = function ({ files = [] }) {
+  const total = files.length;
+  files.forEach((file, index) => {
+    setTimeout(this.wss.send, 1000 * (index + 1), 'RENAME_PROCESSING', { done: index + 1, total });
+  });
+
+  setTimeout(this.wss.send, 1000 * (total + 1), 'RENAME_DONE');
+  return { done: 0, total };
 };
 
 module.exports = FileManager;
