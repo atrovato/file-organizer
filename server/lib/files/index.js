@@ -35,7 +35,10 @@ FileManager.prototype.list = async function () {
 };
 
 FileManager.prototype.compute = function ({ type: typeName, name, sources = [], option }) {
-  const normalizedName = sanitize(name);
+  const sanitizedName = sanitize(name) || '';
+  const normalizedName = sanitizedName.split(' ')
+    .map(word => `${word[0].toUpperCase()}${word.substring(1)}`)
+    .join(' ');
   const type = this.types[typeName];
 
   let error = 0;
@@ -47,7 +50,6 @@ FileManager.prototype.compute = function ({ type: typeName, name, sources = [], 
       return { source, target };
     } catch (e) {
       error += 1;
-      console.log(e);
       return { source, error: e.message }
     }
   });

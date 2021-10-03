@@ -147,13 +147,14 @@ class Home extends Component {
 					<Fragment>
 						<div class="row">
 							<div class="col-12">
-								<div class={cx('card', 'overflow-hidden', style.animate)} style={{ height: collapsed ? 82 : 500 }}>
+								<div class={cx('card', 'overflow-hidden', 'align-items-stretch', style.animate)} style={{ height: collapsed ? 82 : 413 }}>
 									<div class="card-header">
 										Liste des fichiers disponibles
 									</div>
 									<div class="overflow-auto">
 										<List elements={availableFiles} onSelect={this.toggleSelection} disabled={action} />
 									</div>
+									<div class="flex-fill"></div>
 									<div class="card-footer fw-lighter justify-content-end row">
 										{!action && (
 											<div class="col-8">

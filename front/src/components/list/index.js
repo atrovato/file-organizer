@@ -15,9 +15,10 @@ const List = ({ elements = [], onSelect, disabled }) => (
         onClick={() => onSelect(item)}
         disabled={disabled}
       >
-        {item.base}
-        <br />
-        <small class="text-muted fw-light">{item.dir}</small>
+        <div class="row">
+          <div class="col-6 text-muted fw-light"><small>{item.dir}</small></div>
+          <div class="col-6">{item.base}</div>
+        </div>
       </button>
     ))}
   </div>
