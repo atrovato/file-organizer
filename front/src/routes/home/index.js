@@ -147,7 +147,7 @@ class Home extends Component {
 					<Fragment>
 						<div class="row">
 							<div class="col-12">
-								<div class={cx('card', 'overflow-hidden', 'align-items-stretch', style.animate)} style={{ height: collapsed ? 82 : 413 }}>
+								<div class={cx('card', 'overflow-hidden', 'align-items-stretch', style.animate)} style={{ height: collapsed ? 82 : 500 }}>
 									<div class="card-header">
 										Liste des fichiers disponibles
 									</div>
