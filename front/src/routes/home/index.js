@@ -146,8 +146,8 @@ class Home extends Component {
 	loadFiles = async () => {
 		try {
 			const { data = {} } = await axios.get(`${config.API_URL}/api/files`);
-			const { files: availableFiles } = data;
-			this.setState({ availableFiles, loading: false });
+			const { files: availableFiles, types: availableTypes } = data;
+			this.setState({ availableFiles, availableTypes, loading: false });
 		} catch (e) {
 			console.log(e);
 		}
@@ -170,7 +170,18 @@ class Home extends Component {
 		this.loadFiles();
 	}
 
-	render(props, { availableFiles, selectedFiles, targetFiles, loading, action, collapsed, normalizedName = '', error, showMode = 'season' }) {
+	render(props, {
+		availableFiles,
+		availableTypes = [],
+		selectedFiles,
+		targetFiles,
+		loading,
+		action,
+		collapsed,
+		normalizedName = '',
+		error,
+		showMode = 'season'
+	}) {
 		const nbSelected = selectedFiles.length;
 		const nameValid = normalizedName.length > 0;
 
@@ -220,14 +231,13 @@ class Home extends Component {
 								</div>
 							</div>
 						</div>
-						{nbSelected > 0 && (
-							<div class="row mt-3">
-								<div class="text-center mx-auto">
-									<ActionButton label="Film" type="movie" selectAction={this.selectAction} disabled={nbSelected !== 1} action={action} />
-									<ActionButton label="Série" type="show" selectAction={this.selectAction} disabled={nbSelected === 0} action={action} />
-								</div>
+						<div class="row mt-3">
+							<div class="text-center mx-auto">
+								{availableTypes.map(({ key, label, maxSelected }) => (
+									<ActionButton key={key} label={label} type={key} selectAction={this.selectAction} disabled={nbSelected === 0 || (maxSelected && maxSelected < nbSelected)} action={action} />
+								))}
 							</div>
-						)}
+						</div>
 						{action && (
 							<div class="row mt-3">
 								<div class="input-group input-group">
