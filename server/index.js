@@ -37,6 +37,17 @@ app.post('/api/files/compute', (req, res) => {
   }
 });
 
+app.post('/api/files', (req, res) => {
+  try {
+    //const result = fileManager.compute(req.body);
+    const progress = { done: 1, total: req.body.files.length };
+    res.json(progress);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json(e);
+  }
+});
+
 app.listen(SOCKET_PORT, () => {
   console.log('Server is ready!');
 });
