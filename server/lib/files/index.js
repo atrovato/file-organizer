@@ -35,7 +35,7 @@ FileManager.prototype.list = async function () {
 };
 
 FileManager.prototype.compute = function ({ type: typeName, name, sources = [], option }) {
-  const sanitizedName = sanitize(name) || '';
+  const sanitizedName = sanitize(name, { replacement: '.' }) || '';
   const normalizedName = sanitizedName.split(' ')
     .map(word => `${word[0].toUpperCase()}${word.substring(1)}`)
     .join(' ');
